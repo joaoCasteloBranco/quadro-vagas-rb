@@ -23,34 +23,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Ruby
+      - name: Install Ruby and gems
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3.0
+          ruby-version: '3.4.2'
           bundler-cache: true
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            chromium \
-            libnss3 \
-            libxi6 \
-            libgdk-pixbuf2.0-0 \
-            libxcomposite1 \
-            libxrandr2 \
-            libatk1.0-0 \
-            libgtk-3-0 \
-            libxss1 \
-            libgbm1
-
-      - name: Set up database
-        run: |
-          bundle exec rails db:create db:migrate
+      - name: Set up database schema
+        run: bin/rails db:migrate 
 
       - name: Run tests
-        run: |
-          bundle exec rspec
+        run: bundle exec spec
 
   lint:
     runs-on: ubuntu-latest
@@ -65,5 +48,4 @@ jobs:
           bundler-cache: true
 
       - name: Lint Ruby files
-        run: |
-          bundle exec rubocop
+        run: bundle exec rubocop
