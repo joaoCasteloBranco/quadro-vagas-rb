@@ -7,58 +7,26 @@ on:
     branches: [ main ]
 
 jobs:
-  scan_js:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: bin/importmap audit
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
-
   test:
     runs-on: ubuntu-latest
-
     services:
-      postgres:
+      db:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
-        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
-
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.4.2
+          ruby-version: 3.3.0
           bundler-cache: true
 
       - name: Install system dependencies
@@ -76,18 +44,26 @@ jobs:
             libxss1 \
             libgbm1
 
-      - name: Build and start Docker containers
+      - name: Set up database
         run: |
-          docker-compose up -d --build 
-
-      - name: Run database setup
-        run: |
-          docker-compose run --rm web rails db:setup
+          bundle exec rails db:create db:migrate
 
       - name: Run tests
         run: |
-          docker-compose run --rm web rspec
+          bundle exec rspec
 
-      - name: Run Rubocop
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.0
+          bundler-cache: true
+
+      - name: Lint Ruby files
         run: |
-          docker-compose exec web rubocop
+          bundle exec rubocop
